@@ -1,0 +1,12 @@
+{
+  "run_id": "20260625_150119_f475b1c7",
+  "markdown": "reports/daily_report_20251231.md",
+  "html": "reports/daily_report_20251231.html",
+  "archived_markdown": "data_real_200/runs/20260625_150119_f475b1c7/reports/daily_report_20251231.md",
+  "archived_html": "data_real_200/runs/20260625_150119_f475b1c7/reports/daily_report_20251231.html",
+  "archived_orders": "data_real_200/runs/20260625_150119_f475b1c7/orders/next_day_orders.csv",
+  "archived_risk": "data_real_200/runs/20260625_150119_f475b1c7/analysis/candidate_risk_tags.csv",
+  "archived_explain": "data_real_200/runs/20260625_150119_f475b1c7/analysis/candidate_explanations.csv",
+  "model": "data_real_200/runs/20260625_150119_f475b1c7/models/v1_daily_lgb.pkl",
+  "recommended_config": null
+}

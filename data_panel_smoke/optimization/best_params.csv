@@ -1,0 +1,2 @@
+top_n,hold_days,min_score,take_profit,stop_loss,total_return,annual_return,max_drawdown,sharpe,trade_count,final_equity
+3.0,2.0,0.55,,,0.06735332198130162,0.15072492688652805,-0.003538600849463447,3.779262380864995,30.0,1067353.3219813015

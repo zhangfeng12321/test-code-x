@@ -1,0 +1,6 @@
+{
+  "run_id": "20260625_120247_6e350171",
+  "markdown": "reports/daily_report_20240628.md",
+  "html": "reports/daily_report_20240628.html",
+  "model": "models/v1_daily_lgb.pkl"
+}

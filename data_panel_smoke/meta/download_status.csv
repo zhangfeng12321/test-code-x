@@ -1,0 +1,3 @@
+task,code,start,end,status,rows,error,updated_at
+daily,600000,20240101,20240630,success,117,,2026-06-25T13:07:50
+daily,000001,20240101,20240630,success,117,,2026-06-25T13:07:51

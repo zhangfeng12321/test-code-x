@@ -1,0 +1,2 @@
+signal_date,code,action,ref_price,shares,planned_amount,score,up_probability,down_probability,take_profit_price,stop_loss_price,note
+2024-06-28,600000,BUY,7.70501653,25900,199559.928127,0.0624475575124638,0.1065828283915974,0.0163219868299693,8.0902673565,7.473866034099999,次日按开盘/流动性/涨跌停复核后执行

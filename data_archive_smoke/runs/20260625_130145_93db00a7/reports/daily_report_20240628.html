@@ -1,0 +1,165 @@
+<!doctype html>
+<html><head><meta charset='utf-8'><title>A股短线模型报告 2024-06-28</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:24px;background:#f7f8fa;color:#1f2937}
+h1{margin-bottom:4px} .sub{color:#6b7280;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:16px 0}
+.card{background:white;border-radius:12px;padding:16px;box-shadow:0 1px 4px #0001}
+.label{font-size:12px;color:#6b7280} .value{font-size:22px;font-weight:700;margin-top:6px}
+section{background:white;border-radius:12px;padding:18px;margin:16px 0;box-shadow:0 1px 4px #0001}
+.table{border-collapse:collapse;width:100%;font-size:13px} .table th,.table td{border-bottom:1px solid #e5e7eb;padding:8px;text-align:right} .table th:first-child,.table td:first-child{text-align:left}
+</style></head><body>
+<h1>A股短线模型报告</h1><div class='sub'>2024-06-28 · 候选 2 只</div>
+<div class='grid'><div class='card'><div class='label'>总收益</div><div class='value'>6.54%</div></div><div class='card'><div class='label'>年化收益</div><div class='value'>14.61%</div></div><div class='card'><div class='label'>最大回撤</div><div class='value'>-0.81%</div></div><div class='card'><div class='label'>Sharpe</div><div class='value'>3.160</div></div><div class='card'><div class='label'>胜率</div><div class='value'>75.00%</div></div><div class='card'><div class='label'>盈亏比</div><div class='value'>4.845</div></div></div>
+<section><h2>Top 候选</h2><table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>code</th>
+      <th>up_probability</th>
+      <th>down_probability</th>
+      <th>risk_score</th>
+      <th>final_score</th>
+      <th>suggest_action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>600000</td>
+      <td>0.683637</td>
+      <td>0.036303</td>
+      <td>0.097619</td>
+      <td>0.461523</td>
+      <td>BUY</td>
+    </tr>
+    <tr>
+      <td>000001</td>
+      <td>0.029981</td>
+      <td>0.492000</td>
+      <td>0.075205</td>
+      <td>-0.084934</td>
+      <td>AVOID</td>
+    </tr>
+  </tbody>
+</table></section>
+<section><h2>Top 特征重要性</h2><table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>feature</th>
+      <th>importance</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>ret_1d</td>
+      <td>254</td>
+    </tr>
+    <tr>
+      <td>lower_shadow</td>
+      <td>249</td>
+    </tr>
+    <tr>
+      <td>atr_14</td>
+      <td>210</td>
+    </tr>
+    <tr>
+      <td>turnover_rate</td>
+      <td>197</td>
+    </tr>
+    <tr>
+      <td>macd_dea</td>
+      <td>183</td>
+    </tr>
+    <tr>
+      <td>ret_3d</td>
+      <td>178</td>
+    </tr>
+    <tr>
+      <td>volume_ratio_5</td>
+      <td>173</td>
+    </tr>
+    <tr>
+      <td>macd_dif</td>
+      <td>148</td>
+    </tr>
+    <tr>
+      <td>rsi_6</td>
+      <td>130</td>
+    </tr>
+    <tr>
+      <td>ret_5d</td>
+      <td>130</td>
+    </tr>
+    <tr>
+      <td>upper_shadow</td>
+      <td>127</td>
+    </tr>
+    <tr>
+      <td>amplitude</td>
+      <td>118</td>
+    </tr>
+    <tr>
+      <td>close_ma5_ratio</td>
+      <td>99</td>
+    </tr>
+    <tr>
+      <td>volume_ratio_20</td>
+      <td>97</td>
+    </tr>
+    <tr>
+      <td>close_ma10_ratio</td>
+      <td>95</td>
+    </tr>
+  </tbody>
+</table></section>
+<section><h2>数据质量摘要</h2><table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>severity</th>
+      <th>issue_count</th>
+      <th>affected_codes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>ok</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table></section>
+<section><h2>月度收益</h2><table class="dataframe table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>month</th>
+      <th>return</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2024-01</td>
+      <td>0.012415</td>
+    </tr>
+    <tr>
+      <td>2024-02</td>
+      <td>0.033901</td>
+    </tr>
+    <tr>
+      <td>2024-03</td>
+      <td>0.007020</td>
+    </tr>
+    <tr>
+      <td>2024-04</td>
+      <td>0.011935</td>
+    </tr>
+    <tr>
+      <td>2024-05</td>
+      <td>0.000359</td>
+    </tr>
+    <tr>
+      <td>2024-06</td>
+      <td>-0.001581</td>
+    </tr>
+  </tbody>
+</table></section>
+<section><h2>风险提示</h2><p>本报告为模型信号，不构成投资建议；实盘需结合流动性、涨跌停、仓位和止损。</p></section>
+</body></html>
