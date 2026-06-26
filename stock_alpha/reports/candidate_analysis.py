@@ -9,7 +9,7 @@ def candidate_risk_tags(predictions: pd.DataFrame, daily: pd.DataFrame | None = 
         return pd.DataFrame()
     df = predictions.copy()
     df["code"] = df["code"].astype(str).str.extract(r"(\d{1,6})", expand=False).str.zfill(6)
-    df["date"] = pd.to_datetime(df["date"])
+    df["date"] = pd.to_datetime(df["date"], format="mixed")
     latest = df.sort_values("date").groupby("code", as_index=False).tail(1).copy()
     tags = []
     for r in latest.itertuples(index=False):
@@ -29,7 +29,8 @@ def candidate_risk_tags(predictions: pd.DataFrame, daily: pd.DataFrame | None = 
         if getattr(r, "is_limit_down", False):
             t.append("跌停风险/流动性差")
         if getattr(r, "risk_blocked", False):
-            t.append("风控阻断")
+            reason = getattr(r, "risk_reasons", "")
+            t.append(f"风控阻断({reason})" if reason else "风控阻断")
         tags.append("、".join(t) if t else "正常")
     latest["risk_tags"] = tags
     return latest[["code", "date", "risk_tags"]]
@@ -46,8 +47,8 @@ def explain_candidates(features: pd.DataFrame, predictions: pd.DataFrame, featur
     p = predictions.copy()
     f["code"] = f["code"].astype(str).str.extract(r"(\d{1,6})", expand=False).str.zfill(6)
     p["code"] = p["code"].astype(str).str.extract(r"(\d{1,6})", expand=False).str.zfill(6)
-    f["date"] = pd.to_datetime(f["date"])
-    p["date"] = pd.to_datetime(p["date"])
+    f["date"] = pd.to_datetime(f["date"], format="mixed")
+    p["date"] = pd.to_datetime(p["date"], format="mixed")
     latest_pred = p.sort_values("date").groupby("code", as_index=False).tail(1)[["code", "date"]]
     data = latest_pred.merge(f, on=["code", "date"], how="left")
     top_features = feature_importance.sort_values("importance", ascending=False)["feature"].head(20).tolist()

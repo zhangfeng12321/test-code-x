@@ -8,9 +8,11 @@ import pandas as pd
 
 from stock_alpha.features.v1_daily import build_daily_features
 from stock_alpha.labels.triple_barrier import make_triple_barrier_labels
+from stock_alpha.labels.ranking_label import make_ranking_labels
 from stock_alpha.training.evaluation import prediction_metrics, time_split_dates
 from stock_alpha.training.feature_importance import extract_feature_importance
 from stock_alpha.models.v1_daily_model import V1DailyAlphaModel
+from stock_alpha.models.v2_ranker_model import V2RankerModel
 from stock_alpha.features.v2_intraday import build_intraday_features
 from stock_alpha.models.v2_intraday_model import V2IntradayScorer
 from stock_alpha.storage.cache import DataLake
@@ -37,12 +39,25 @@ class V1Trainer:
         if codes:
             parts = [self.lake.read_parquet("daily", c) for c in codes]
             non_empty = [p for p in parts if not p.empty]
-            return pd.concat(non_empty, ignore_index=True) if non_empty else pd.DataFrame()
-        daily_dir = self.lake.root / "daily"
-        files = list(daily_dir.glob("*.csv"))
-        if not files:
-            return pd.DataFrame()
-        return pd.concat([pd.read_csv(p, dtype={"code": str}) for p in files], ignore_index=True)
+            df = pd.concat(non_empty, ignore_index=True) if non_empty else pd.DataFrame()
+        else:
+            daily_dir = self.lake.root / "daily"
+            files = list(daily_dir.glob("*.csv"))
+            if not files:
+                return pd.DataFrame()
+            df = pd.concat([pd.read_csv(p, dtype={"code": str}) for p in files], ignore_index=True)
+        # 自动清洗：去空日期 + 去重 + 排序
+        if not df.empty:
+            df["date"] = pd.to_datetime(df["date"], errors="coerce")
+            df = df.dropna(subset=["date"])
+            if "code" in df.columns:
+                df["code"] = df["code"].astype(str).str.extract(r"(\d{1,6})", expand=False).str.zfill(6)
+                df = df.drop_duplicates(subset=["code", "date"], keep="last")
+                df = df.sort_values(["code", "date"]).reset_index(drop=True)
+            else:
+                df = df.drop_duplicates(subset=["date"], keep="last")
+                df = df.sort_values("date").reset_index(drop=True)
+        return df
 
     def load_minute(self, codes: list[str] | None = None, period: str = "5") -> pd.DataFrame:
         minute_dir = self.lake.root / "minute"
@@ -55,24 +70,35 @@ class V1Trainer:
         parts = [pd.read_csv(p, dtype={"code": str}) for p in files if p.exists()]
         return pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
 
-    def train(self, codes: list[str] | None = None, model_name: str = "v1_daily_lgb.pkl", train_end: str | None = None, valid_end: str | None = None, include_v2: bool = True, period: str = "5", model_path: str | Path | None = None, label_profit_take: float = 0.03, label_stop_loss: float = 0.02, label_horizon: int = 3) -> TrainResult:
+    def train(self, codes: list[str] | None = None, model_name: str = "v1_daily_lgb.pkl", train_end: str | None = None, valid_end: str | None = None, include_v2: bool = True, period: str = "5", model_path: str | Path | None = None, label_profit_take: float = 0.03, label_stop_loss: float = 0.02, label_horizon: int = 3, model_type: str = "ranker") -> TrainResult:
         daily = self.load_daily(codes)
         if daily.empty:
             raise RuntimeError("no daily data found; run download-daily first")
         daily["code"] = daily["code"].astype(str).str.extract(r"(\d{1,6})", expand=False).str.zfill(6)
         daily["date"] = pd.to_datetime(daily["date"], format="mixed")
         features = build_daily_features(daily)
-        labels = make_triple_barrier_labels(daily, profit_take=label_profit_take, stop_loss=label_stop_loss, horizon=label_horizon)
         split_train_end, split_valid_end = time_split_dates(features, train_end, valid_end)
         train_features = features[features["date"] <= split_train_end]
-        train_labels = labels[labels["date"] <= split_train_end]
-        model = V1DailyAlphaModel().fit(train_features, train_labels)
+
+        if model_type == "ranker":
+            # Ranker 模式：使用排序标签 + LGBMRanker
+            labels = make_ranking_labels(daily, horizon=label_horizon)
+            train_labels = labels[labels["date"] <= split_train_end]
+            model = V2RankerModel().fit(train_features, train_labels)
+        else:
+            # Classifier 模式：沿用原有三分类
+            labels = make_triple_barrier_labels(daily, profit_take=label_profit_take, stop_loss=label_stop_loss, horizon=label_horizon)
+            train_labels = labels[labels["date"] <= split_train_end]
+            model = V1DailyAlphaModel().fit(train_features, train_labels)
+
         pred = model.predict(features)
-        eval_df = prediction_metrics(pred, labels)
-        if not eval_df.empty:
-            eval_df["train_end"] = split_train_end
-            eval_df["valid_end"] = split_valid_end
-            self.lake.write_parquet("evaluation", "v1_metrics", eval_df)
+        # 评估指标（兑容两种标签格式）
+        if model_type != "ranker":
+            eval_df = prediction_metrics(pred, labels)
+            if not eval_df.empty:
+                eval_df["train_end"] = split_train_end
+                eval_df["valid_end"] = split_valid_end
+                self.lake.write_parquet("evaluation", "v1_metrics", eval_df)
         if include_v2:
             minute = self.load_minute(codes, period=period)
             if not minute.empty:

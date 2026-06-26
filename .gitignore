@@ -25,3 +25,4 @@ Thumbs.db
 
 # Large data directories (too many files for Git)
 data_real_2000_10pct/
+logs/

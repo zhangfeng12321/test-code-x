@@ -6,6 +6,8 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
+from stock_alpha.risk_rules import RiskRuleConfig, apply_hard_risk_filters, daily_risk_features
+
 
 @dataclass
 class AShareBacktestConfig:
@@ -26,6 +28,15 @@ class AShareBacktestConfig:
     max_risk_score: float | None = None
     max_daily_buys: int | None = None
     min_score: float = 0.45
+    # --- 市场级风控 ---
+    market_crash_threshold: float = -0.02   # 全市场均跌超此值暂停买入
+    max_down_limit_count: int = 100         # 跌停家数超此值暂停
+    portfolio_drawdown_pause: float = 0.10  # 组合5日回撤超此值暂停
+    # --- 行业集中度 ---
+    max_sector_pct: float = 0.40  # 同板块最大仓位占比
+    # --- 连亏熔断 ---
+    max_consecutive_loss_pause: int = 6    # 连续亏损N次暂停
+    pause_days_after_streak: int = 5       # 暂停天数
 
 
 def _is_limit_up(open_price: float, pre_close: float, limit_pct: float = 0.10) -> bool:
@@ -45,7 +56,7 @@ class AShareBacktester:
     def run(self, daily: pd.DataFrame, predictions: pd.DataFrame) -> dict[str, pd.DataFrame]:
         cfg = self.config
         bars = daily.copy()
-        bars["date"] = pd.to_datetime(bars["date"])
+        bars["date"] = pd.to_datetime(bars["date"], format="mixed")
         bars = bars.sort_values(["code", "date"])
         if "limit_pct" not in bars.columns:
             from stock_alpha.features.risk_filters import enrich_trade_constraints
@@ -54,15 +65,35 @@ class AShareBacktester:
             bars["pre_close"] = bars.groupby("code")["close"].shift(1)
         calendar = sorted(bars["date"].dropna().unique())
         pred = predictions.copy()
-        pred["date"] = pd.to_datetime(pred["date"])
+        pred["code"] = pred["code"].astype(str).str.extract(r"(\d{1,6})", expand=False).str.zfill(6)
+        pred["date"] = pd.to_datetime(pred["date"], format="mixed")
+        risk_ctx = daily_risk_features(bars)
+        if not risk_ctx.empty:
+            pred = pred.merge(risk_ctx, on=["code", "date"], how="left", suffixes=("", "_daily"))
 
         cash = cfg.initial_cash
         positions: dict[str, dict] = {}
         trades = []
         equity_rows = []
+        # 风控状态
+        consecutive_losses = 0
+        pause_until_idx = -1  # 熔断暂停到第N个 calendar idx
 
         by_date_pred = {d: x for d, x in pred.groupby("date")}
         bar_idx = {(r.code, r.date): r for r in bars.itertuples(index=False)}
+
+        # 预计算每日市场状态（用于市场熔断判断）
+        market_daily = bars.groupby("date").agg(
+            market_ret=("pct_chg", "mean") if "pct_chg" in bars.columns else ("close", "count"),
+            down_limit_count=("is_limit_down", "sum") if "is_limit_down" in bars.columns else ("close", "count"),
+        ).reset_index() if "pct_chg" in bars.columns else pd.DataFrame()
+        if not market_daily.empty and "market_ret" in market_daily.columns:
+            # pct_chg 可能是百分比形式
+            if market_daily["market_ret"].abs().median() > 1:
+                market_daily["market_ret"] = market_daily["market_ret"] / 100.0
+            market_state = {r.date: r for r in market_daily.itertuples(index=False)}
+        else:
+            market_state = {}
 
         for idx, d in enumerate(calendar):
             # 先卖：止盈/止损/持有期到期。保守假设同日止盈止损均触发时先止损。
@@ -94,45 +125,74 @@ class AShareBacktester:
 
             # 再买：使用前一交易日收盘后信号，下一交易日开盘买
             if idx > 0:
-                signal_date = calendar[idx - 1]
-                signals = by_date_pred.get(signal_date)
-                if signals is not None:
-                    signals = signals.sort_values(cfg.score_col, ascending=False)
-                    if cfg.max_down_probability is not None and "down_probability" in signals.columns:
-                        signals = signals[signals["down_probability"] <= cfg.max_down_probability]
-                    if cfg.max_risk_score is not None and "risk_score" in signals.columns:
-                        signals = signals[signals["risk_score"] <= cfg.max_risk_score]
-                    if cfg.selection_mode == "topn":
+                # === 市场级风控检查 ===
+                buy_paused = False
+                # 1. 连亏熔断
+                if idx <= pause_until_idx:
+                    buy_paused = True
+                # 2. 市场熔断
+                if not buy_paused and market_state:
+                    ms = market_state.get(d)
+                    if ms is not None:
+                        if hasattr(ms, "market_ret") and ms.market_ret < cfg.market_crash_threshold:
+                            buy_paused = True
+                        if hasattr(ms, "down_limit_count") and ms.down_limit_count > cfg.max_down_limit_count:
+                            buy_paused = True
+                # 3. 组合回撤暂停
+                if not buy_paused and len(equity_rows) >= 5:
+                    recent_eq = [r["equity"] for r in equity_rows[-5:]]
+                    peak = max(recent_eq)
+                    if peak > 0 and (recent_eq[-1] / peak - 1) < -cfg.portfolio_drawdown_pause:
+                        buy_paused = True
+
+                if not buy_paused:
+                    signal_date = calendar[idx - 1]
+                    signals = by_date_pred.get(signal_date)
+                    if signals is not None:
+                        signals = signals.sort_values(cfg.score_col, ascending=False)
+                        risk_cfg = RiskRuleConfig(
+                            min_score=cfg.min_score,
+                            max_down_probability=cfg.max_down_probability,
+                            max_risk_score=cfg.max_risk_score,
+                            require_up_gt_down=True,
+                        )
+                        signals = apply_hard_risk_filters(signals, risk_cfg, score_col=cfg.score_col)
+                        signals = signals[~signals["risk_blocked"].fillna(False)]
+                        # topn 只截断已通过硬门槛的信号
+                        if cfg.selection_mode == "quantile" and not signals.empty:
+                            q = signals[cfg.score_col].quantile(cfg.score_quantile)
+                            signals = signals[signals[cfg.score_col] >= q]
                         signals = signals.head(cfg.top_n)
-                    elif cfg.selection_mode == "quantile":
-                        q = signals[cfg.score_col].quantile(cfg.score_quantile)
-                        signals = signals[signals[cfg.score_col] >= q].head(cfg.top_n)
-                    else:
-                        signals = signals[signals[cfg.score_col] >= cfg.min_score].head(cfg.top_n)
-                    slots = max(cfg.top_n - len(positions), 0)
-                    if cfg.max_daily_buys is not None:
-                        slots = min(slots, cfg.max_daily_buys)
-                    for r in signals.itertuples(index=False):
-                        if slots <= 0 or r.code in positions:
-                            continue
-                        bar = bar_idx.get((r.code, d))
-                        if bar is None or pd.isna(bar.open) or pd.isna(bar.pre_close):
-                            continue
-                        if _is_limit_up(bar.open, bar.pre_close, getattr(bar, "limit_pct", 0.10)):
-                            continue
-                        budget = min(cash * cfg.max_position_pct, cfg.initial_cash * cfg.max_position_pct)
-                        price = bar.open * (1 + cfg.slippage)
-                        shares = int((budget / price) // cfg.lot_size * cfg.lot_size)
-                        if shares <= 0:
-                            continue
-                        amount = shares * price
-                        fee = amount * cfg.buy_fee
-                        if amount + fee > cash:
-                            continue
-                        cash -= amount + fee
-                        positions[r.code] = {"shares": shares, "buy_price": price, "buy_idx": idx, "buy_date": d}
-                        trades.append({"date": d, "code": r.code, "side": "BUY", "price": price, "shares": shares, "amount": amount, "fee": fee, "reason": "signal"})
-                        slots -= 1
+                        slots = max(cfg.top_n - len(positions), 0)
+                        if cfg.max_daily_buys is not None:
+                            slots = min(slots, cfg.max_daily_buys)
+                        for r in signals.itertuples(index=False):
+                            if slots <= 0 or r.code in positions:
+                                continue
+                            bar = bar_idx.get((r.code, d))
+                            if bar is None or pd.isna(bar.open) or pd.isna(bar.pre_close):
+                                continue
+                            if _is_limit_up(bar.open, bar.pre_close, getattr(bar, "limit_pct", 0.10)):
+                                continue
+                            # === 行业集中度控制 ===
+                            sector = r.code[:3]
+                            if positions and cfg.max_sector_pct < 1.0:
+                                same_sector = sum(1 for c in positions if c[:3] == sector)
+                                if same_sector / max(len(positions) + 1, 1) >= cfg.max_sector_pct:
+                                    continue
+                            budget = min(cash * cfg.max_position_pct, cfg.initial_cash * cfg.max_position_pct)
+                            price = bar.open * (1 + cfg.slippage)
+                            shares = int((budget / price) // cfg.lot_size * cfg.lot_size)
+                            if shares <= 0:
+                                continue
+                            amount = shares * price
+                            fee = amount * cfg.buy_fee
+                            if amount + fee > cash:
+                                continue
+                            cash -= amount + fee
+                            positions[r.code] = {"shares": shares, "buy_price": price, "buy_idx": idx, "buy_date": d}
+                            trades.append({"date": d, "code": r.code, "side": "BUY", "price": price, "shares": shares, "amount": amount, "fee": fee, "reason": "signal"})
+                            slots -= 1
 
             market_value = 0.0
             for code, pos in positions.items():

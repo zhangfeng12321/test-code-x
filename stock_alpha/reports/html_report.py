@@ -39,10 +39,11 @@ class HtmlReportGenerator:
         risk_tags: pd.DataFrame | None = None,
         explanations: pd.DataFrame | None = None,
         orders: pd.DataFrame | None = None,
+        watchlist: pd.DataFrame | None = None,
     ) -> Path:
         df = predictions.copy()
         df["code"] = df["code"].astype(str).str.extract(r"(\d{1,6})", expand=False).str.zfill(6)
-        df["date"] = pd.to_datetime(df["date"])
+        df["date"] = pd.to_datetime(df["date"], format="mixed")
         d = pd.to_datetime(trade_date) if trade_date else df["date"].max()
         day = df[df["date"] == d].copy()
         if "risk_blocked" in day.columns:
@@ -84,6 +85,7 @@ section{{background:white;border-radius:12px;padding:18px;margin:16px 0;box-shad
 <section><h2>数据质量摘要</h2>{self._df_html(quality_summary, 10)}</section>
 <section><h2>月度收益</h2>{self._df_html(monthly, 24)}</section>
 <section><h2>次日交易计划</h2>{self._df_html(orders, 30)}</section>
+<section><h2>观察池（需次日盘中确认，不是买入清单）</h2>{self._df_html(watchlist, 30)}</section>
 <section><h2>候选风险标签</h2>{self._df_html(risk_tags, 30)}</section>
 <section><h2>为什么入选</h2>{self._df_html(explanations, 30)}</section>
 <section><h2>信号稳定性</h2>{self._df_html(signal_stability, 30)}</section>

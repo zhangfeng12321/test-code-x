@@ -9,7 +9,7 @@ def signal_stability(predictions: pd.DataFrame, score_col: str | None = None, to
         return pd.DataFrame()
     df = predictions.copy()
     df["code"] = df["code"].astype(str).str.extract(r"(\d{1,6})", expand=False).str.zfill(6)
-    df["date"] = pd.to_datetime(df["date"])
+    df["date"] = pd.to_datetime(df["date"], format="mixed")
     score_col = score_col or ("final_score_v2" if "final_score_v2" in df.columns else "final_score")
     rows = []
     selected_parts = []
@@ -47,7 +47,7 @@ def turnover_by_date(predictions: pd.DataFrame, top_n: int = 20, score_col: str 
         return pd.DataFrame()
     df = predictions.copy()
     df["code"] = df["code"].astype(str).str.extract(r"(\d{1,6})", expand=False).str.zfill(6)
-    df["date"] = pd.to_datetime(df["date"])
+    df["date"] = pd.to_datetime(df["date"], format="mixed")
     score_col = score_col or ("final_score_v2" if "final_score_v2" in df.columns else "final_score")
     prev = set()
     rows = []

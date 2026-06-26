@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import pandas as pd
+
+if TYPE_CHECKING:
+    from stock_alpha.data.trade_calendar import TradeCalendar
 
 
 @dataclass
@@ -14,8 +18,11 @@ class QualityIssue:
     detail: str = ""
 
 
-def check_daily_quality(daily: pd.DataFrame, start: str | None = None, end: str | None = None) -> pd.DataFrame:
-    """日线数据质量检查：重复、缺日期、价格异常、成交量异常。"""
+def check_daily_quality(daily: pd.DataFrame, start: str | None = None, end: str | None = None, trade_calendar: "TradeCalendar | None" = None) -> pd.DataFrame:
+    """日线数据质量检查：重复、缺日期、价格异常、成交量异常。
+
+    如果提供了 trade_calendar，使用精确交易日数量判断缺失；否则回退到工作日估算。
+    """
     if daily.empty:
         return pd.DataFrame([QualityIssue("", "empty_dataset", "high", 0, "daily data is empty").__dict__])
     df = daily.copy()
@@ -45,11 +52,16 @@ def check_daily_quality(daily: pd.DataFrame, start: str | None = None, end: str 
                 issues.append(QualityIssue(code, "zero_or_null_volume", "medium", int(zero_vol)))
         s = pd.to_datetime(start) if start else x["date"].min()
         e = pd.to_datetime(end) if end else x["date"].max()
-        expected_weekdays = len(pd.date_range(s, e, freq="B")) if pd.notna(s) and pd.notna(e) else 0
+        # 使用交易日历精确计算期望交易日，否则回退到工作日估算
+        if trade_calendar is not None and trade_calendar.total_days > 0:
+            expected_days = trade_calendar.count_trade_days(s, e)
+        else:
+            expected_days = len(pd.date_range(s, e, freq="B")) if pd.notna(s) and pd.notna(e) else 0
         actual = x["date"].dt.normalize().nunique()
-        # 交易日少于工作日是正常的，阈值放宽：低于 60% 才报中高风险。
-        if expected_weekdays and actual < expected_weekdays * 0.6:
-            issues.append(QualityIssue(code, "too_few_trading_days", "medium", int(expected_weekdays - actual), f"actual={actual}, expected_weekdays={expected_weekdays}"))
+        # 交易日低于期望的80%才报问题（有交易日历时更精确）
+        threshold = 0.80 if trade_calendar is not None else 0.60
+        if expected_days and actual < expected_days * threshold:
+            issues.append(QualityIssue(code, "too_few_trading_days", "medium", int(expected_days - actual), f"actual={actual}, expected={expected_days}"))
     return pd.DataFrame([i.__dict__ for i in issues]) if issues else pd.DataFrame(columns=["code", "issue", "severity", "count", "detail"])
 
 

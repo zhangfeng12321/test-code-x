@@ -21,7 +21,7 @@ class MarketDataDownloader:
     provider: MarketDataProvider
     lake: DataLake
     sleep_seconds: float = 0.2
-    max_retries: int = 2
+    max_retries: int = 3
 
     def get_stock_universe(self, limit: Optional[int] = None) -> pd.DataFrame:
         df = self.provider.get_stock_basic()

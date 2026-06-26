@@ -32,10 +32,11 @@ class DailyReportGenerator:
         risk_tags: pd.DataFrame | None = None,
         explanations: pd.DataFrame | None = None,
         orders: pd.DataFrame | None = None,
+        watchlist: pd.DataFrame | None = None,
     ) -> Path:
         df = predictions.copy()
         df["code"] = df["code"].astype(str).str.extract(r"(\d{1,6})", expand=False).str.zfill(6)
-        df["date"] = pd.to_datetime(df["date"])
+        df["date"] = pd.to_datetime(df["date"], format="mixed")
         d = pd.to_datetime(trade_date) if trade_date else df["date"].max()
         day_df = df[df["date"] == d].copy()
         if "risk_blocked" in day_df.columns:
@@ -94,6 +95,8 @@ class DailyReportGenerator:
             lines.append("| - | 无 | - | - | - | - | - | - |")
         if orders is not None and not orders.empty:
             lines += ["", "## 次日交易计划", ""] + self._table(orders, 20)
+        if watchlist is not None and not watchlist.empty:
+            lines += ["", "## 观察池（需次日盘中确认，不是买入清单）", ""] + self._table(watchlist, 30)
         if risk_tags is not None and not risk_tags.empty:
             lines += ["", "## 候选风险标签", ""] + self._table(risk_tags, 20)
         if explanations is not None and not explanations.empty:

@@ -14,6 +14,7 @@ class UniverseFilterConfig:
     min_close: float = 2.0
     max_close: float = 200.0
     min_avg_amount_20: float = 100_000_000.0
+    max_avg_amount_20: float = 5_000_000_000.0  # 50亿，排除超级大盘
     min_avg_amount_60: float = 50_000_000.0
     min_turnover_20: float = 1.0
     min_amplitude_20: float = 0.02
@@ -81,6 +82,7 @@ def filter_universe(metrics: pd.DataFrame, cfg: UniverseFilterConfig) -> pd.Data
     checks &= m["trade_days_60"].fillna(0) >= cfg.min_trade_days_60
     checks &= m["latest_close"].between(cfg.min_close, cfg.max_close)
     checks &= m["avg_amount_20"].fillna(0) >= cfg.min_avg_amount_20
+    checks &= m["avg_amount_20"].fillna(float('inf')) <= cfg.max_avg_amount_20
     checks &= m["avg_amount_60"].fillna(0) >= cfg.min_avg_amount_60
     checks &= m["avg_turnover_20"].fillna(0) >= cfg.min_turnover_20
     checks &= m["avg_amplitude_20"].fillna(0).between(cfg.min_amplitude_20, cfg.max_amplitude_20)

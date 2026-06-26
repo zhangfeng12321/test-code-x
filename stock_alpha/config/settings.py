@@ -45,13 +45,16 @@ class PipelineConfig:
     selection_mode: str = "topn"
     score_quantile: float = 0.95
     skip_download: bool = False
-    max_down_probability: float | None = 0.60
+    max_down_probability: float | None = 0.40
     max_risk_score: float | None = 0.25
     min_order_avg_amount_20: float | None = 100000000.0
     max_daily_buys: int | None = 5
     label_profit_take: float = 0.03
     label_stop_loss: float = 0.02
     label_horizon: int = 3
+    min_train_days: int = 250  # 参与训练至少需要的交易天数（约1年）
+    model_type: str = "ranker"  # "classifier" 或 "ranker"
+    label_horizons: list = None  # 双时间框架，如 [5, 10]，默认只用 label_horizon
 
     @staticmethod
     def from_file(path: str | Path) -> "PipelineConfig":

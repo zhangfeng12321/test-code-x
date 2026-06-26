@@ -87,6 +87,15 @@ def main() -> None:
             if not codes:
                 basic = dl.get_stock_universe(limit=args.limit)
                 codes = basic["code"].tolist()
+            # 排除北交所（8/4开头）+ ST股
+            codes = [c for c in codes if not str(c).zfill(6).startswith(("8", "4"))]
+            # 排除ST股（如果stock_basic可用）
+            if not codes:
+                pass
+            elif 'basic' in dir() and not basic.empty and 'name' in basic.columns:
+                st_codes = set(basic[basic['name'].astype(str).str.contains('ST', case=False, na=False)]['code'].astype(str).str.zfill(6))
+                codes = [c for c in codes if str(c).zfill(6) not in st_codes]
+            print(f"预过滤后下载数量: {len(codes)}（已排除北交所+ST）")
             runner.download_daily_batches(codes, args.start, args.end, force=args.force)
         else:
             runner.retry_failed_daily(args.start, args.end, force=True)

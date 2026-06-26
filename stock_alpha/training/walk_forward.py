@@ -24,7 +24,7 @@ class WalkForwardRunner:
 
     def run(self, daily: pd.DataFrame, score_col: str = "final_score") -> dict[str, pd.DataFrame]:
         daily = daily.copy()
-        daily["date"] = pd.to_datetime(daily["date"])
+        daily["date"] = pd.to_datetime(daily["date"], format="mixed")
         daily["code"] = daily["code"].astype(str).str.extract(r"(\d{1,6})", expand=False).str.zfill(6)
         dates = sorted(daily["date"].dropna().unique())
         if len(dates) < self.train_days + self.test_days:

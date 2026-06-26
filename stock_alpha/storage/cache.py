@@ -69,6 +69,9 @@ class DataLake:
         else:
             out = pd.concat([old, df], ignore_index=True)
             out = out.drop_duplicates(subset=keys, keep="last")
+        # 统一日期格式，避免混合格式导致增量检测失败
+        if "date" in out.columns:
+            out["date"] = pd.to_datetime(out["date"], errors="coerce").dt.strftime("%Y-%m-%d")
         return self.write_table(dataset, name, out)
 
     def query_csv(self, dataset: str, name: str) -> pd.DataFrame:

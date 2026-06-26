@@ -4,7 +4,7 @@ import pandas as pd
 
 
 def time_split_dates(df: pd.DataFrame, train_end: str | None = None, valid_end: str | None = None) -> tuple[pd.Timestamp, pd.Timestamp]:
-    dates = pd.to_datetime(df["date"]).sort_values().dropna().unique()
+    dates = pd.to_datetime(df["date"], format="mixed").sort_values().dropna().unique()
     if len(dates) < 10:
         d1 = dates[int(len(dates) * 0.6)]
         d2 = dates[int(len(dates) * 0.8)]
@@ -20,7 +20,7 @@ def prediction_metrics(pred: pd.DataFrame, labels: pd.DataFrame, score_col: str 
     df = pred.merge(labels[["code", "date", "label", "max_fwd_ret", "min_fwd_ret"]], on=["code", "date"], how="inner")
     if df.empty:
         return pd.DataFrame()
-    df["date"] = pd.to_datetime(df["date"])
+    df["date"] = pd.to_datetime(df["date"], format="mixed")
     rows = []
     for segment, x in {
         "all": df,

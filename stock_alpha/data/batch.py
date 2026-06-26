@@ -18,6 +18,7 @@ def chunks(items: list[str], size: int) -> Iterable[list[str]]:
 class BatchDownloadRunner:
     downloader: MarketDataDownloader
     batch_size: int = 50
+    workers: int = 1  # 固定单线程串行下载
 
     def download_daily_batches(self, codes: list[str], start: str, end: str, adjust: str = "qfq", force: bool = False) -> pd.DataFrame:
         parts = []
