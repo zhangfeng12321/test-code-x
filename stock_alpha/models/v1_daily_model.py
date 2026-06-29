@@ -45,7 +45,13 @@ class V1DailyAlphaModel:
         y = data["label"].astype(int).map({-1: 0, 0: 1, 1: 2})
         try:
             from lightgbm import LGBMClassifier  # type: ignore
-            self.model = LGBMClassifier(n_estimators=200, learning_rate=0.03, max_depth=-1, objective="multiclass", random_state=42, verbose=-1)
+            self.model = LGBMClassifier(
+                n_estimators=200, learning_rate=0.03, max_depth=5,
+                num_leaves=31, min_child_samples=50,
+                reg_alpha=0.1, reg_lambda=1.0,
+                subsample=0.8, colsample_bytree=0.8,
+                objective="multiclass", random_state=42, verbose=-1,
+            )
             self.backend = "lightgbm"
         except Exception:
             try:

@@ -1,0 +1,4 @@
+strategy,total_signals,buy_signals,buy_rate
+factor_alpha,234,117,0.5
+trend_breakout,184,6,0.03260869565217391
+combined,234,1,0.004273504273504274

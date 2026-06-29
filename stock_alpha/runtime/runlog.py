@@ -22,7 +22,7 @@ class RunLogger:
         row = {"ts": datetime.now().isoformat(timespec="seconds"), "run_id": self.run_id, "step": step, "status": status, **payload}
         with self.events_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
-        print(f"[{self.run_id}] {step}: {status}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] [{self.run_id}] {step}: {status}")
 
     def write_summary(self, **payload) -> Path:
         p = self.dir / "summary.json"

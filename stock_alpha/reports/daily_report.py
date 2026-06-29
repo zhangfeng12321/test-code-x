@@ -34,6 +34,7 @@ class DailyReportGenerator:
         orders: pd.DataFrame | None = None,
         watchlist: pd.DataFrame | None = None,
     ) -> Path:
+        from datetime import datetime as _dt
         df = predictions.copy()
         df["code"] = df["code"].astype(str).str.extract(r"(\d{1,6})", expand=False).str.zfill(6)
         df["date"] = pd.to_datetime(df["date"], format="mixed")
@@ -44,7 +45,9 @@ class DailyReportGenerator:
         buy_df = day_df[day_df.get("suggest_action", "") == "BUY"].sort_values("final_score", ascending=False)
         watch_df = day_df[day_df.get("suggest_action", "") != "BUY"].sort_values("final_score", ascending=False)
         picks = buy_df if only_buy else pd.concat([buy_df, watch_df]).head(top_n)
-        path = self.out_dir / f"daily_report_{d.strftime('%Y%m%d')}.md"
+        # 报告文件名包含日期+时间，支持每天多次生成
+        timestamp = _dt.now().strftime("%Y%m%d_%H%M%S")
+        path = self.out_dir / f"daily_report_{timestamp}.md"
         score_col = "final_score_v2" if "final_score_v2" in picks.columns else "final_score"
         lines = [
             f"# A股短线模型每日选股报告 - {d.strftime('%Y-%m-%d')}",

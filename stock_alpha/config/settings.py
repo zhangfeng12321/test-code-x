@@ -53,8 +53,18 @@ class PipelineConfig:
     label_stop_loss: float = 0.02
     label_horizon: int = 3
     min_train_days: int = 250  # 参与训练至少需要的交易天数（约1年）
-    model_type: str = "ranker"  # "classifier" 或 "ranker"
+    model_type: str = "ranker"  # "classifier" / "ranker" / "ensemble"
+    ensemble_alpha: float = 0.6  # ensemble 模式下 Ranker 权重（0~1），Classifier 权重为 1-alpha
     label_horizons: list = None  # 双时间框架，如 [5, 10]，默认只用 label_horizon
+    # --- 多策略体系 ---
+    use_multi_strategy: bool = False  # 是否启用多策略模式
+    strategies: list = None  # 策略列表，如 ["factor_alpha", "sector_rotation", "trend_breakout"]
+    strategy_weights: list = None  # 策略权重，如 [0.33, 0.33, 0.34]
+    # --- 市场状态过滤 (Bull Market Filter) ---
+    use_bull_filter: bool = True       # 开启市场状态过滤（建议开启）
+    bull_breadth_days: int = 20        # 计算全市场近 N 日等权涨幅
+    bull_breadth_pause: float = 0.12   # 近 N 日市场涨幅 > 此阈值时暂停新买入（12%防止误报）
+    bull_ma_days: int = 60             # 全市场均价 MA窗口天数
 
     @staticmethod
     def from_file(path: str | Path) -> "PipelineConfig":

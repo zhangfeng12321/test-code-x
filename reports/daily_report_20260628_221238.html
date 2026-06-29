@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>明日操作清单 2026-06-26</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+  background: #0f172a; color: #e2e8f0; padding: 16px; line-height: 1.4; }
+header { text-align: center; margin-bottom: 16px; }
+h1 { font-size: 22px; color: #fff; margin-bottom: 2px; }
+.subtitle { color: #94a3b8; font-size: 13px; }
+h2 { font-size: 17px; color: #fff; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #334155; }
+h3 { font-size: 14px; color: #f1f5f9; margin-bottom: 8px; }
+
+/* Metrics bar */
+.metrics { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
+.metric { background: #1e293b; border-radius: 8px; padding: 8px 18px; text-align: center; min-width: 100px; }
+.m-label { display: block; font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+.m-value { display: block; font-size: 20px; font-weight: 700; margin-top: 2px; color: #f1f5f9; }
+.m-value.green { color: #4ade80; }
+.m-value.red { color: #f87171; }
+
+/* Stock cards */
+.orders-section, .watch-section, .guide-section { margin-bottom: 16px; }
+section { background: #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+.stock-cards { display: flex; flex-direction: column; gap: 12px; }
+.stock-card { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 14px; transition: border-color 0.2s; }
+.stock-card:hover { border-color: #3b82f6; }
+
+/* Card header */
+.card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.rank { background: #3b82f6; color: white; font-weight: 700; font-size: 13px; padding: 3px 8px; border-radius: 5px; }
+.code { font-family: 'SF Mono', monospace; font-size: 16px; font-weight: 600; color: #fff; }
+.name { font-size: 16px; color: #e2e8f0; }
+.header-scores { display: flex; gap: 14px; margin-left: 8px; }
+.hs-item { display: flex; flex-direction: column; align-items: center; }
+.hs-label { font-size: 10px; color: #64748b; }
+.hs-value { font-size: 16px; font-weight: 700; }
+.hs-value.high { color: #4ade80; }
+.hs-value.mid { color: #fbbf24; }
+.hs-value.low { color: #94a3b8; }
+.hs-value.green { color: #4ade80; }
+.hs-value.red { color: #f87171; }
+.sector-tag { background: #334155; color: #94a3b8; font-size: 12px; padding: 3px 10px; border-radius: 20px; margin-left: auto; }
+
+/* Prices */
+.card-prices { margin-bottom: 8px; }
+.price-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 0; }
+.p-item { flex: 1; min-width: 80px; }
+.p-label { display: block; font-size: 10px; color: #94a3b8; }
+.p-value { font-size: 14px; font-weight: 600; color: #f1f5f9; }
+.p-item.tp .p-value { color: #4ade80; }
+.p-item.sl .p-value { color: #f87171; }
+.p-item small { font-size: 12px; opacity: 0.7; }
+
+/* Confirmation + Realtime row */
+.card-bottom-row { display: flex; gap: 10px; margin-top: 10px; }
+.card-confirm { flex: 0 0 32%; background: #1a2332; border: 1px dashed #475569; border-radius: 6px; padding: 10px 12px; }
+.realtime-signal { flex: 1; background: #0c1929; border: 1px solid #1e40af; border-radius: 6px; padding: 10px 12px; }
+.confirm-title { font-size: 12px; font-weight: 600; color: #fbbf24; margin-bottom: 6px; }
+.confirm-item { font-size: 12px; color: #cbd5e1; padding: 2px 0; }
+.confirm-item .check { color: #4ade80; font-weight: 700; margin-right: 6px; }
+.confirm-item strong { color: #fff; }
+
+/* Realtime Signal */
+.signal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.signal-title { font-size: 14px; font-weight: 600; color: #60a5fa; }
+.signal-time { font-size: 11px; color: #64748b; }
+.signal-indicators { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px; }
+.signal-row { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: #1e293b; border-radius: 5px; border-left: 3px solid #475569; }
+.signal-row.pass { border-left-color: #4ade80; }
+.signal-row.fail { border-left-color: #f87171; }
+.signal-row.unknown { border-left-color: #fbbf24; }
+.sig-main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.sig-name { font-size: 11px; color: #94a3b8; }
+.sig-value { font-size: 13px; font-weight: 600; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sig-sub { font-size: 10px; color: #64748b; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sig-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+.sig-badge.pass { background: #064e3b; color: #4ade80; }
+.sig-badge.fail { background: #450a0a; color: #f87171; }
+.sig-badge.unknown { background: #422006; color: #fbbf24; }
+.signal-overall { text-align: center; padding-top: 6px; border-top: 1px solid #1e293b; }
+.overall-badge { display: inline-block; font-size: 14px; font-weight: 700; padding: 4px 16px; border-radius: 6px; }
+.overall-badge.buy { background: #064e3b; color: #4ade80; border: 1px solid #4ade80; }
+.overall-badge.no_buy { background: #450a0a; color: #f87171; border: 1px solid #f87171; }
+.overall-badge.waiting { background: #422006; color: #fbbf24; border: 1px solid #fbbf24; }
+.signal-loading { text-align: center; color: #64748b; font-size: 13px; padding: 12px; }
+
+/* Watchlist */
+.watch-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.watch-table th { text-align: left; color: #94a3b8; font-size: 12px; padding: 8px 12px; border-bottom: 1px solid #334155; }
+.watch-table td { padding: 8px 12px; border-bottom: 1px solid #1e293b; color: #e2e8f0; }
+.watch-table tr:hover { background: #334155; }
+
+/* Guide */
+.guide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.guide-card { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 18px; }
+.guide-table { width: 100%; font-size: 13px; }
+.guide-table td { padding: 6px 8px; color: #cbd5e1; border-bottom: 1px solid #1e293b; }
+.guide-table .time { font-weight: 600; color: #60a5fa; white-space: nowrap; width: 80px; }
+.guide-card ul { list-style: none; }
+.guide-card li { padding: 4px 0; font-size: 13px; color: #cbd5e1; }
+.guide-card li::before { content: '• '; color: #60a5fa; }
+.guide-card li.tp::before { content: '• '; color: #4ade80; }
+.guide-card li.sl::before { content: '• '; color: #f87171; }
+.guide-card code { background: #334155; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #93c5fd; }
+.guide-card strong { color: #fff; }
+
+/* Empty & Footer */
+.empty { text-align: center; color: #94a3b8; padding: 40px; }
+footer { text-align: center; margin-top: 32px; padding: 16px; color: #64748b; font-size: 12px; }
+footer p { background: #1e293b; display: inline-block; padding: 8px 16px; border-radius: 8px; }
+
+@media (max-width: 640px) {
+  body { padding: 12px; }
+  .card-scores { flex-direction: column; gap: 8px; }
+  .price-row { flex-direction: column; }
+  .guide-grid { grid-template-columns: 1fr; }
+  .signal-row { flex-direction: column; align-items: flex-start; }
+  .card-bottom-row { flex-direction: column; }
+}
+</style>
+</head><body>
+<header>
+  <h1>🎯 明日操作清单</h1>
+  <p class="subtitle">信号日期: 2026-06-26 · 模型自动生成 · 不构成投资建议</p>
+</header>
+
+<section class="metrics">
+  <div class="metric"><span class="m-label">年化收益</span><span class="m-value green">2.2%</span></div>
+  <div class="metric"><span class="m-label">最大回撤</span><span class="m-value red">-8.9%</span></div>
+  <div class="metric"><span class="m-label">Sharpe</span><span class="m-value">0.39</span></div>
+  <div class="metric"><span class="m-label">胜率</span><span class="m-value">46.6%</span></div>
+  <div class="metric"><span class="m-label">盈亏比</span><span class="m-value">1.38</span></div>
+</section>
+<section class="orders-section">
+  <h2>🎯 明日操作清单（5 只，按模型分数排序）</h2>
+  <div class="stock-cards"><div class="stock-card">
+  <div class="card-header">
+    <span class="rank">#1</span>
+    <span class="code">000536</span>
+    <span class="name">华映科技</span>
+    <span class="header-scores">
+      <span class="hs-item"><span class="hs-label">模型分</span><span class="hs-value high">0.9932</span></span>
+      <span class="hs-item"><span class="hs-label">上涨</span><span class="hs-value green">95%</span></span>
+      <span class="hs-item"><span class="hs-label">下跌</span><span class="hs-value red">5%</span></span>
+    </span>
+    <span class="sector-tag">计算机、通信和其他电子设备制造业</span>
+  </div>
+  <div class="card-prices">
+    <div class="price-row">
+      <div class="p-item"><span class="p-label">买入参考价</span><span class="p-value">¥3.13</span></div>
+      <div class="p-item"><span class="p-label">股数</span><span class="p-value">15900股</span></div>
+      <div class="p-item"><span class="p-label">金额</span><span class="p-value">5.0万</span></div>
+      <div class="p-item tp"><span class="p-label">止盈卖出</span><span class="p-value">¥3.60 <small>(+15%)</small></span></div>
+      <div class="p-item sl"><span class="p-label">止损卖出</span><span class="p-value">¥2.75 <small>(-7%)</small></span></div>
+      <div class="p-item"><span class="p-label">持有上限</span><span class="p-value">10个交易日</span></div>
+    </div>
+  </div>
+  <div class="card-bottom-row">
+  <div class="card-confirm">
+    <div class="confirm-title">开盘确认条件（全部满足才买）</div>
+    <div class="confirm-item"><span class="check">✓</span> 开盘价 ≥ <strong>¥3.07</strong>（不低开超2%）</div>
+    <div class="confirm-item"><span class="check">✓</span> 9:30-9:45 不出现放量下杀（量比&gt;2 且股价持续下跌 → 放弃）</div>
+    <div class="confirm-item"><span class="check">✓</span> 9:45前股价站上 <strong>¥3.13</strong>（昨收）</div>
+    <div class="confirm-item"><span class="check">✓</span> 板块「计算机、通信和其他电子设备制造业」不弱势（运行 confirm_open.py 自动判断）</div>
+  </div>
+  <div class="realtime-signal" id="signal-000536">
+    <div class="signal-header">
+      <span class="signal-title">📡 实时信号</span>
+      <span class="signal-time" id="time-000536">加载中...</span>
+    </div>
+    <div class="signal-indicators" id="indicators-000536">
+      <div class="signal-loading">正在获取实时数据...</div>
+    </div>
+    <div class="signal-overall" id="overall-000536">
+      <span class="overall-badge waiting">⏳ 等待数据</span>
+    </div>
+  </div>
+  </div>
+</div><div class="stock-card">
+  <div class="card-header">
+    <span class="rank">#2</span>
+    <span class="code">002229</span>
+    <span class="name">鸿博股份</span>
+    <span class="header-scores">
+      <span class="hs-item"><span class="hs-label">模型分</span><span class="hs-value high">0.9906</span></span>
+      <span class="hs-item"><span class="hs-label">上涨</span><span class="hs-value green">95%</span></span>
+      <span class="hs-item"><span class="hs-label">下跌</span><span class="hs-value red">5%</span></span>
+    </span>
+    <span class="sector-tag">印刷和记录媒介复制业</span>
+  </div>
+  <div class="card-prices">
+    <div class="price-row">
+      <div class="p-item"><span class="p-label">买入参考价</span><span class="p-value">¥10.14</span></div>
+      <div class="p-item"><span class="p-label">股数</span><span class="p-value">4900股</span></div>
+      <div class="p-item"><span class="p-label">金额</span><span class="p-value">5.0万</span></div>
+      <div class="p-item tp"><span class="p-label">止盈卖出</span><span class="p-value">¥11.66 <small>(+15%)</small></span></div>
+      <div class="p-item sl"><span class="p-label">止损卖出</span><span class="p-value">¥8.92 <small>(-7%)</small></span></div>
+      <div class="p-item"><span class="p-label">持有上限</span><span class="p-value">10个交易日</span></div>
+    </div>
+  </div>
+  <div class="card-bottom-row">
+  <div class="card-confirm">
+    <div class="confirm-title">开盘确认条件（全部满足才买）</div>
+    <div class="confirm-item"><span class="check">✓</span> 开盘价 ≥ <strong>¥9.94</strong>（不低开超2%）</div>
+    <div class="confirm-item"><span class="check">✓</span> 9:30-9:45 不出现放量下杀（量比&gt;2 且股价持续下跌 → 放弃）</div>
+    <div class="confirm-item"><span class="check">✓</span> 9:45前股价站上 <strong>¥10.14</strong>（昨收）</div>
+    <div class="confirm-item"><span class="check">✓</span> 板块「印刷和记录媒介复制业」不弱势（运行 confirm_open.py 自动判断）</div>
+  </div>
+  <div class="realtime-signal" id="signal-002229">
+    <div class="signal-header">
+      <span class="signal-title">📡 实时信号</span>
+      <span class="signal-time" id="time-002229">加载中...</span>
+    </div>
+    <div class="signal-indicators" id="indicators-002229">
+      <div class="signal-loading">正在获取实时数据...</div>
+    </div>
+    <div class="signal-overall" id="overall-002229">
+      <span class="overall-badge waiting">⏳ 等待数据</span>
+    </div>
+  </div>
+  </div>
+</div><div class="stock-card">
+  <div class="card-header">
+    <span class="rank">#3</span>
+    <span class="code">300004</span>
+    <span class="name">南风股份</span>
+    <span class="header-scores">
+      <span class="hs-item"><span class="hs-label">模型分</span><span class="hs-value high">0.9887</span></span>
+      <span class="hs-item"><span class="hs-label">上涨</span><span class="hs-value green">95%</span></span>
+      <span class="hs-item"><span class="hs-label">下跌</span><span class="hs-value red">5%</span></span>
+    </span>
+    <span class="sector-tag">通用设备制造业</span>
+  </div>
+  <div class="card-prices">
+    <div class="price-row">
+      <div class="p-item"><span class="p-label">买入参考价</span><span class="p-value">¥9.88</span></div>
+      <div class="p-item"><span class="p-label">股数</span><span class="p-value">5000股</span></div>
+      <div class="p-item"><span class="p-label">金额</span><span class="p-value">4.9万</span></div>
+      <div class="p-item tp"><span class="p-label">止盈卖出</span><span class="p-value">¥11.36 <small>(+15%)</small></span></div>
+      <div class="p-item sl"><span class="p-label">止损卖出</span><span class="p-value">¥8.69 <small>(-7%)</small></span></div>
+      <div class="p-item"><span class="p-label">持有上限</span><span class="p-value">10个交易日</span></div>
+    </div>
+  </div>
+  <div class="card-bottom-row">
+  <div class="card-confirm">
+    <div class="confirm-title">开盘确认条件（全部满足才买）</div>
+    <div class="confirm-item"><span class="check">✓</span> 开盘价 ≥ <strong>¥9.68</strong>（不低开超2%）</div>
+    <div class="confirm-item"><span class="check">✓</span> 9:30-9:45 不出现放量下杀（量比&gt;2 且股价持续下跌 → 放弃）</div>
+    <div class="confirm-item"><span class="check">✓</span> 9:45前股价站上 <strong>¥9.88</strong>（昨收）</div>
+    <div class="confirm-item"><span class="check">✓</span> 板块「通用设备制造业」不弱势（运行 confirm_open.py 自动判断）</div>
+  </div>
+  <div class="realtime-signal" id="signal-300004">
+    <div class="signal-header">
+      <span class="signal-title">📡 实时信号</span>
+      <span class="signal-time" id="time-300004">加载中...</span>
+    </div>
+    <div class="signal-indicators" id="indicators-300004">
+      <div class="signal-loading">正在获取实时数据...</div>
+    </div>
+    <div class="signal-overall" id="overall-300004">
+      <span class="overall-badge waiting">⏳ 等待数据</span>
+    </div>
+  </div>
+  </div>
+</div><div class="stock-card">
+  <div class="card-header">
+    <span class="rank">#4</span>
+    <span class="code">002036</span>
+    <span class="name">联创电子</span>
+    <span class="header-scores">
+      <span class="hs-item"><span class="hs-label">模型分</span><span class="hs-value high">0.9872</span></span>
+      <span class="hs-item"><span class="hs-label">上涨</span><span class="hs-value green">95%</span></span>
+      <span class="hs-item"><span class="hs-label">下跌</span><span class="hs-value red">5%</span></span>
+    </span>
+    <span class="sector-tag">计算机、通信和其他电子设备制造业</span>
+  </div>
+  <div class="card-prices">
+    <div class="price-row">
+      <div class="p-item"><span class="p-label">买入参考价</span><span class="p-value">¥7.25</span></div>
+      <div class="p-item"><span class="p-label">股数</span><span class="p-value">6800股</span></div>
+      <div class="p-item"><span class="p-label">金额</span><span class="p-value">4.9万</span></div>
+      <div class="p-item tp"><span class="p-label">止盈卖出</span><span class="p-value">¥8.34 <small>(+15%)</small></span></div>
+      <div class="p-item sl"><span class="p-label">止损卖出</span><span class="p-value">¥6.38 <small>(-7%)</small></span></div>
+      <div class="p-item"><span class="p-label">持有上限</span><span class="p-value">10个交易日</span></div>
+    </div>
+  </div>
+  <div class="card-bottom-row">
+  <div class="card-confirm">
+    <div class="confirm-title">开盘确认条件（全部满足才买）</div>
+    <div class="confirm-item"><span class="check">✓</span> 开盘价 ≥ <strong>¥7.10</strong>（不低开超2%）</div>
+    <div class="confirm-item"><span class="check">✓</span> 9:30-9:45 不出现放量下杀（量比&gt;2 且股价持续下跌 → 放弃）</div>
+    <div class="confirm-item"><span class="check">✓</span> 9:45前股价站上 <strong>¥7.25</strong>（昨收）</div>
+    <div class="confirm-item"><span class="check">✓</span> 板块「计算机、通信和其他电子设备制造业」不弱势（运行 confirm_open.py 自动判断）</div>
+  </div>
+  <div class="realtime-signal" id="signal-002036">
+    <div class="signal-header">
+      <span class="signal-title">📡 实时信号</span>
+      <span class="signal-time" id="time-002036">加载中...</span>
+    </div>
+    <div class="signal-indicators" id="indicators-002036">
+      <div class="signal-loading">正在获取实时数据...</div>
+    </div>
+    <div class="signal-overall" id="overall-002036">
+      <span class="overall-badge waiting">⏳ 等待数据</span>
+    </div>
+  </div>
+  </div>
+</div><div class="stock-card">
+  <div class="card-header">
+    <span class="rank">#5</span>
+    <span class="code">000966</span>
+    <span class="name">长源电力</span>
+    <span class="header-scores">
+      <span class="hs-item"><span class="hs-label">模型分</span><span class="hs-value high">0.9853</span></span>
+      <span class="hs-item"><span class="hs-label">上涨</span><span class="hs-value green">95%</span></span>
+      <span class="hs-item"><span class="hs-label">下跌</span><span class="hs-value red">5%</span></span>
+    </span>
+    <span class="sector-tag">电力、热力生产和供应业</span>
+  </div>
+  <div class="card-prices">
+    <div class="price-row">
+      <div class="p-item"><span class="p-label">买入参考价</span><span class="p-value">¥3.96</span></div>
+      <div class="p-item"><span class="p-label">股数</span><span class="p-value">12600股</span></div>
+      <div class="p-item"><span class="p-label">金额</span><span class="p-value">5.0万</span></div>
+      <div class="p-item tp"><span class="p-label">止盈卖出</span><span class="p-value">¥4.55 <small>(+15%)</small></span></div>
+      <div class="p-item sl"><span class="p-label">止损卖出</span><span class="p-value">¥3.48 <small>(-7%)</small></span></div>
+      <div class="p-item"><span class="p-label">持有上限</span><span class="p-value">10个交易日</span></div>
+    </div>
+  </div>
+  <div class="card-bottom-row">
+  <div class="card-confirm">
+    <div class="confirm-title">开盘确认条件（全部满足才买）</div>
+    <div class="confirm-item"><span class="check">✓</span> 开盘价 ≥ <strong>¥3.88</strong>（不低开超2%）</div>
+    <div class="confirm-item"><span class="check">✓</span> 9:30-9:45 不出现放量下杀（量比&gt;2 且股价持续下跌 → 放弃）</div>
+    <div class="confirm-item"><span class="check">✓</span> 9:45前股价站上 <strong>¥3.96</strong>（昨收）</div>
+    <div class="confirm-item"><span class="check">✓</span> 板块「电力、热力生产和供应业」不弱势（运行 confirm_open.py 自动判断）</div>
+  </div>
+  <div class="realtime-signal" id="signal-000966">
+    <div class="signal-header">
+      <span class="signal-title">📡 实时信号</span>
+      <span class="signal-time" id="time-000966">加载中...</span>
+    </div>
+    <div class="signal-indicators" id="indicators-000966">
+      <div class="signal-loading">正在获取实时数据...</div>
+    </div>
+    <div class="signal-overall" id="overall-000966">
+      <span class="overall-badge waiting">⏳ 等待数据</span>
+    </div>
+  </div>
+  </div>
+</div></div>
+</section>
+<section class="watch-section">
+  <h2>👀 观察池（20 只，盘中确认后可作为替补）</h2>
+  <table class="watch-table">
+    <thead><tr><th>代码</th><th>名称</th><th>分数</th></tr></thead>
+    <tbody><tr><td>000536</td><td>华映科技</td><td>0.9932</td></tr><tr><td>002229</td><td>鸿博股份</td><td>0.9906</td></tr><tr><td>300004</td><td>南风股份</td><td>0.9887</td></tr><tr><td>002036</td><td>联创电子</td><td>0.9872</td></tr><tr><td>000966</td><td>长源电力</td><td>0.9853</td></tr><tr><td>603619</td><td>中曼石油</td><td>0.9845</td></tr><tr><td>603920</td><td>世运电路</td><td>0.9834</td></tr><tr><td>002918</td><td>蒙娜丽莎</td><td>0.9815</td></tr><tr><td>000720</td><td>新能泰山</td><td>0.9796</td></tr><tr><td>300099</td><td>尤洛卡</td><td>0.9792</td></tr><tr><td>300061</td><td>旗天科技</td><td>0.9773</td></tr><tr><td>603538</td><td>美诺华</td><td>0.9739</td></tr><tr><td>001376</td><td>百通能源</td><td>0.9713</td></tr><tr><td>300291</td><td>百纳千成</td><td>0.9702</td></tr><tr><td>000899</td><td>赣能股份</td><td>0.9698</td></tr><tr><td>000890</td><td>法尔胜</td><td>0.9683</td></tr><tr><td>300115</td><td>长盈精密</td><td>0.9645</td></tr><tr><td>000993</td><td>闽东电力</td><td>0.9600</td></tr><tr><td>002881</td><td>美格智能</td><td>0.9577</td></tr><tr><td>000600</td><td>建投能源</td><td>0.9558</td></tr></tbody>
+  </table>
+</section>
+<section class="guide-section">
+  <h2>📋 操作指南</h2>
+  <div class="guide-grid">
+    <div class="guide-card">
+      <h3>⏰ 时间节奏</h3>
+      <table class="guide-table">
+        <tr><td class="time">15:15后</td><td>运行 run_daily.sh，生成次日操作清单</td></tr>
+        <tr><td class="time">晚上</td><td>阅读本报告，标记拟买入标的</td></tr>
+        <tr><td class="time">次日 9:15</td><td>集合竞价观察：看开盘价是否满足最低开盘价</td></tr>
+        <tr><td class="time">次日 9:45</td><td>运行 <code>scripts/confirm_open.py</code> 自动检查4条件</td></tr>
+        <tr><td class="time">持有期间</td><td>每日收盘后检查是否触及止盈/止损价</td></tr>
+      </table>
+    </div>
+    <div class="guide-card">
+      <h3>🟢 买入规则</h3>
+      <ul>
+        <li>4个确认条件<strong>必须全部满足</strong>，缺一不买</li>
+        <li>每日最多买入 <strong>5 只</strong>，优先买模型分数最高的</li>
+        <li>单只仓位不超过总资金 <strong>10%</strong></li>
+      </ul>
+    </div>
+    <div class="guide-card">
+      <h3>🔴 卖出规则（三选一，先到先执行）</h3>
+      <ul>
+        <li class="tp">止盈：股价 ≥ 止盈价 → 当日收盘前卖出</li>
+        <li class="sl">止损：股价 ≤ 止损价 → <strong>立即卖出，不犹豫</strong></li>
+        <li>到期：持有满 10 个交易日 → 次日开盘卖出</li>
+      </ul>
+    </div>
+    <div class="guide-card">
+      <h3>⚠️ 特殊情况</h3>
+      <ul>
+        <li>大盘跳水（沪指跌&gt;2%）→ 全部暂停买入</li>
+        <li>开盘即涨停 → 不追，放弃</li>
+        <li>集合竞价一字跌停 → 持仓不卖，次日再处理</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>⚠️ 风险提示：本报告为量化模型信号，不构成任何投资建议。实盘前必须结合涨跌停、流动性、仓位管理和止损规则。</p>
+</footer>
+<script>
+const CODES = ["000536", "002229", "300004", "002036", "000966"];
+const ORDERS = {"000536": {"ref_price": 3.13, "prev_close": 3.13}, "002229": {"ref_price": 10.14, "prev_close": 10.14}, "300004": {"ref_price": 9.88, "prev_close": 9.88}, "002036": {"ref_price": 7.25, "prev_close": 7.25}, "000966": {"ref_price": 3.96, "prev_close": 3.96}};
+
+// === JSONP 工具：绕过跨域限制 ===
+function jsonp(url) {
+  return new Promise((resolve, reject) => {
+    const cbName = "_cb_" + Math.random().toString(36).slice(2);
+    const timeout = setTimeout(() => { delete window[cbName]; reject("timeout"); }, 10000);
+    window[cbName] = (data) => {
+      clearTimeout(timeout);
+      delete window[cbName];
+      resolve(data);
+    };
+    const s = document.createElement("script");
+    s.src = url + (url.includes("?") ? "&" : "?") + "cb=" + cbName;
+    s.onerror = () => { clearTimeout(timeout); reject("error"); };
+    document.head.appendChild(s);
+    setTimeout(() => document.head.removeChild(s), 12000);
+  });
+}
+
+// === 东方财富 API ===
+function getSecId(code) {
+  // 沪市: 6xx, 688xxx; 深市: 0xx, 3xx
+  if (code.startsWith("6")) return "1." + code;
+  return "0." + code;
+}
+
+async function fetchStockQuotes() {
+  const results = {};
+  const promises = CODES.map(async (code) => {
+    try {
+      const secid = getSecId(code);
+      const url = "https://push2.eastmoney.com/api/qt/stock/get?secid=" + secid +
+        "&fields=f43,f44,f45,f46,f50,f57,f58,f60,f170,f47,f48";
+      const data = await jsonp(url);
+      if (data && data.data) {
+        const d = data.data;
+        results[code] = {
+          name: d.f58 || "---",
+          current: d.f43 / 100,   // 东财返回分为单位
+          open: d.f46 / 100,
+          prev_close: d.f60 / 100,
+          high: d.f44 / 100,
+          low: d.f45 / 100,
+          volume_ratio: d.f50 / 100,
+          pct_chg: d.f170 / 100,
+        };
+      }
+    } catch (e) { console.warn("fetch " + code + " failed", e); }
+  });
+  await Promise.all(promises);
+  return results;
+}
+
+async function fetchSectors() {
+  try {
+    const url = "https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=500&po=1&np=1&fltt=2&invt=2&fid=f3&fs=m:90+t:2&fields=f3,f14,f104,f105";
+    const data = await jsonp(url);
+    if (data && data.data && data.data.diff) {
+      const sectors = {};
+      data.data.diff.forEach(item => {
+        sectors[item.f14] = {
+          pct_chg: item.f3,
+          up_count: item.f104,
+          down_count: item.f105,
+        };
+      });
+      return sectors;
+    }
+  } catch (e) { console.warn("sector fetch failed", e); }
+  return {};
+}
+
+// === 板块模糊匹配 ===
+function matchSector(sectorName, boardNames) {
+  if (!sectorName || sectorName === "未知") return null;
+  if (boardNames.includes(sectorName)) return sectorName;
+  const clean = sectorName.replace(/[行业]$/g, "");
+  const found = boardNames.find(b => b === clean);
+  if (found) return found;
+  // 关键词匹配
+  const kw = clean.length > 2 ? clean.slice(0, 2) : clean;
+  if (kw.length < 2) return null;
+  const candidates = boardNames.filter(b => b.includes(kw));
+  return candidates.length ? candidates.sort((a,b) => a.length - b.length)[0] : null;
+}
+
+// === 计算信号 ===
+function computeSignals(quotes, sectors) {
+  const boardNames = Object.keys(sectors);
+  const signals = {};
+  const sectorTags = document.querySelectorAll(".sector-tag");
+  // 从页面中提取板块名称
+  const codeSectorMap = {};
+  document.querySelectorAll(".stock-card").forEach(card => {
+    const codeEl = card.querySelector(".code");
+    const sectorEl = card.querySelector(".sector-tag");
+    if (codeEl && sectorEl) {
+      codeSectorMap[codeEl.textContent.trim()] = sectorEl.textContent.trim();
+    }
+  });
+
+  for (const code of CODES) {
+    const q = quotes[code];
+    const order = ORDERS[code] || {};
+    const sectorName = codeSectorMap[code] || "未知";
+
+    if (!q) {
+      signals[code] = { status: "no_data", indicators: [], overall: "unknown", overall_text: "⚠️ 无数据" };
+      continue;
+    }
+
+    const prevClose = q.prev_close > 0 ? q.prev_close : order.ref_price;
+    const minOpen = prevClose * 0.98;
+    const indicators = [];
+
+    // 指标1: 开盘价
+    if (q.open > 0) {
+      const gap = ((q.open / prevClose) - 1) * 100;
+      const pass = q.open >= minOpen;
+      indicators.push({ name: "开盘价", value: `¥${q.open.toFixed(2)} (${gap >= 0 ? "+" : ""}${gap.toFixed(1)}%)`, threshold: `≥ ¥${minOpen.toFixed(2)}`, pass, detail: pass ? "不低开超2%" : `低开${gap.toFixed(1)}%，超过阈值` });
+    } else {
+      indicators.push({ name: "开盘价", value: "未开盘", threshold: `≥ ¥${minOpen.toFixed(2)}`, pass: null, detail: "等待开盘" });
+    }
+
+    // 指标2: 量价关系
+    const isKill = q.volume_ratio > 2.0 && q.current < q.open;
+    const c2 = !isKill;
+    indicators.push({ name: "量价关系", value: `量比 ${q.volume_ratio.toFixed(1)} / 现价${q.current >= q.open ? "↑" : "↓"}`, threshold: "量比≤2 或 价格不跌破开盘", pass: c2, detail: c2 ? "正常" : "放量下杀（量比>2且破开盘价）" });
+
+    // 指标3: 站上昨收
+    const c3 = q.current >= prevClose;
+    const pct = ((q.current / prevClose) - 1) * 100;
+    indicators.push({ name: "站上昨收", value: `¥${q.current.toFixed(2)} (${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%)`, threshold: `≥ ¥${prevClose.toFixed(2)}`, pass: c3, detail: c3 ? "已站上昨收" : `低于昨收${Math.abs(pct).toFixed(1)}%` });
+
+    // 指标4: 板块
+    const matched = matchSector(sectorName, boardNames);
+    if (matched && sectors[matched]) {
+      const s = sectors[matched];
+      const weak = s.pct_chg < -1.0;
+      const ratioBad = s.up_count > 0 && s.down_count / s.up_count > 2.0;
+      const c4 = !(weak || ratioBad);
+      let detail = "板块正常";
+      if (!c4) {
+        const parts = [];
+        if (weak) parts.push(`跌${s.pct_chg.toFixed(1)}%`);
+        if (ratioBad) parts.push(`跌${s.down_count}/涨${s.up_count}`);
+        detail = "板块弱势: " + parts.join(", ");
+      }
+      indicators.push({ name: "板块强弱", value: `[${matched}] ${s.pct_chg >= 0 ? "+" : ""}${s.pct_chg.toFixed(1)}% (涨${s.up_count}/跌${s.down_count})`, threshold: "涨跌幅≥-1% 且 跌/涨<2", pass: c4, detail });
+    } else {
+      indicators.push({ name: "板块强弱", value: `「${sectorName}」未匹配`, threshold: "需手动确认", pass: null, detail: "未匹配到东财板块" });
+    }
+
+    // 总信号
+    const passed = indicators.filter(i => i.pass !== null).map(i => i.pass);
+    const allPass = passed.length === 4 && passed.every(Boolean);
+    const anyFail = passed.some(p => p === false);
+    const overall = allPass ? "buy" : anyFail ? "no_buy" : "waiting";
+    const overall_text = allPass ? "✅ 满足买入条件" : anyFail ? "❌ 不满足买入条件" : "⏳ 等待确认";
+
+    signals[code] = { status: "ok", name: q.name, current: q.current, pct_chg: q.pct_chg, indicators, overall, overall_text };
+  }
+  return signals;
+}
+
+// === 渲染 ===
+function renderSignals(signals, timestamp) {
+  for (const code of CODES) {
+    const sig = signals[code];
+    if (!sig || sig.status === "no_data") continue;
+
+    const timeEl = document.getElementById("time-" + code);
+    if (timeEl) timeEl.textContent = "更新: " + timestamp;
+
+    const indEl = document.getElementById("indicators-" + code);
+    if (indEl) {
+      let html = "";
+      for (const ind of sig.indicators) {
+        const cls = ind.pass === true ? "pass" : ind.pass === false ? "fail" : "unknown";
+        const badge = ind.pass === true ? "✅ 通过" : ind.pass === false ? "❌ 未达标" : "⏳ 待确认";
+        html += `<div class="signal-row ${cls}"><div class="sig-main"><span class="sig-name">${ind.name}</span><span class="sig-value">${ind.value}</span></div><div class="sig-sub">${ind.detail}</div><span class="sig-badge ${cls}">${badge}</span></div>`;
+      }
+      indEl.innerHTML = html;
+    }
+
+    const overEl = document.getElementById("overall-" + code);
+    if (overEl) {
+      overEl.innerHTML = `<span class="overall-badge ${sig.overall}">${sig.overall_text}</span>`;
+    }
+  }
+}
+
+// === 启动 ===
+function isMarketOpen() {
+  const now = new Date();
+  const day = now.getDay(); // 0=周日, 6=周六
+  if (day === 0 || day === 6) return false; // 周末
+  const h = now.getHours(), m = now.getMinutes();
+  const t = h * 100 + m;
+  // 9:15 集合竞价开始 ~ 15:05 数据稳定
+  return t >= 915 && t <= 1505;
+}
+
+async function loadSignals() {
+  if (!isMarketOpen()) {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+    const day = now.getDay();
+    const dayNames = ['周日','周一','周二','周三','周四','周五','周六'];
+    const msg = (day===0||day===6)
+      ? `💤 周末不交易，实时信号开盘后可用（9:15起）`
+      : `⏰ ${dayNames[day]} ${timeStr} 非交易时段，开盘后自动刷新（9:15~15:05）`;
+    CODES.forEach(code => {
+      const el = document.getElementById('indicators-' + code);
+      if (el) el.innerHTML = `<div class="signal-loading">${msg}</div>`;
+      const ov = document.getElementById('overall-' + code);
+      if (ov) ov.innerHTML = '<span class="overall-badge waiting">⏰ 等待开盘</span>';
+      const tm = document.getElementById('time-' + code);
+      if (tm) tm.textContent = '非交易时段';
+    });
+    return;
+  }
+  try {
+    document.querySelectorAll(".signal-loading").forEach(el => {
+      el.textContent = "⭐ 正在获取实时数据...";
+    });
+    const [quotes, sectors] = await Promise.all([fetchStockQuotes(), fetchSectors()]);
+    const signals = computeSignals(quotes, sectors);
+    const now = new Date();
+    const timestamp = now.getHours().toString().padStart(2,"0") + ":" + now.getMinutes().toString().padStart(2,"0") + ":" + now.getSeconds().toString().padStart(2,"0");
+    renderSignals(signals, timestamp);
+  } catch (e) {
+    console.error(e);
+    document.querySelectorAll(".signal-loading").forEach(el => {
+      el.textContent = "❌ 数据获取失败，请检查网络后刷新页面";
+    });
+  }
+}
+
+// 页面加载即执行
+loadSignals();
+</script>
+</body></html>

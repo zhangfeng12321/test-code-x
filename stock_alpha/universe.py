@@ -12,7 +12,7 @@ class UniverseFilterConfig:
     lookback_long: int = 60
     min_trade_days_60: int = 45
     min_close: float = 2.0
-    max_close: float = 200.0
+    max_close: float = 100.0
     min_avg_amount_20: float = 100_000_000.0
     max_avg_amount_20: float = 5_000_000_000.0  # 50亿，排除超级大盘
     min_avg_amount_60: float = 50_000_000.0

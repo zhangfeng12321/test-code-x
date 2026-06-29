@@ -1,0 +1,2 @@
+signal_date,rank,code,action,score,up_probability,down_probability,risk_score,ret_20d,pct_chg,amplitude,atr_14,turnover_rate,confirmation_required
+2024-06-28,1,600000,WATCH,0.7362317277467229,0.7362317277467229,0.1159703936226985,0.0889602499566048,-0.020238095238095277,0.1217,0.01459854014598531,0.01779204999132096,0.1288,次日开盘后确认：不低开>2%、不放量下杀、站上昨收、板块不弱；否则不买

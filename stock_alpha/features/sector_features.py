@@ -1,6 +1,6 @@
 """板块/行业强度特征：个股所属板块的横截面强弱。
 
-通过代码前缀粗分板块（000/002/300/301/600/601/603/688），
+优先使用精确行业分类（东方财富行业板块），若无行业数据则回退到代码前缀粗分。
 计算板块级聚合指标，让模型知道"这只票所在板块今天强不强"。
 """
 from __future__ import annotations
@@ -20,7 +20,7 @@ SECTOR_FEATURES = [
 
 
 def _code_to_sector(code: str) -> str:
-    """按代码前缀粗分板块。"""
+    """按代码前缀粗分板块（fallback 用）。"""
     c = str(code).zfill(6)
     if c.startswith("000") or c.startswith("001"):
         return "SZ_MAIN"      # 深市主板
@@ -38,10 +38,30 @@ def _code_to_sector(code: str) -> str:
         return "OTHER"
 
 
-def build_sector_features(daily: pd.DataFrame) -> pd.DataFrame:
+def _assign_sector(df: pd.DataFrame, stock_basic: pd.DataFrame | None = None) -> pd.Series:
+    """分配板块标签：优先使用精确行业分类，无数据时回退到代码前缀粗分。"""
+    if stock_basic is not None and "industry" in stock_basic.columns:
+        basic = stock_basic[["code", "industry"]].copy()
+        basic["code"] = basic["code"].astype(str).str.extract(r"(\d{1,6})", expand=False).str.zfill(6)
+        basic = basic.drop_duplicates(subset=["code"])
+        merged = df[["code"]].merge(basic, on="code", how="left")
+        sector = merged["industry"].fillna("")
+        # 对未匹配到行业的股票回退到代码前缀
+        mask = (sector == "") | (sector == "未知")
+        if mask.any():
+            sector.loc[mask] = df.loc[mask, "code"].apply(_code_to_sector)
+        return sector
+    # 完全无行业数据，使用代码前缀粗分
+    return df["code"].apply(_code_to_sector)
+
+
+def build_sector_features(daily: pd.DataFrame, stock_basic: pd.DataFrame | None = None) -> pd.DataFrame:
     """构建板块强度特征。
 
-    输入：全量 daily DataFrame（需包含 code, date, close, amount, pct_chg 或可推算）。
+    输入：
+        daily: 全量 daily DataFrame（需包含 code, date, close, amount, pct_chg 或可推算）。
+        stock_basic: 股票基本信息 DataFrame（含 code, industry 列），用于精确行业分类。
+                     若为 None 则回退到代码前缀粗分。
     输出：与输入等长的 DataFrame，新增板块特征列。
     """
     df = daily.copy()
@@ -51,8 +71,8 @@ def build_sector_features(daily: pd.DataFrame) -> pd.DataFrame:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
-    # 分配板块
-    df["_sector"] = df["code"].apply(_code_to_sector)
+    # 分配板块：优先精确行业分类，回退代码前缀
+    df["_sector"] = _assign_sector(df, stock_basic).values
 
     # 计算个股日收益率
     if "pct_chg" not in df.columns or df["pct_chg"].isna().all():
@@ -102,9 +122,9 @@ def build_sector_features(daily: pd.DataFrame) -> pd.DataFrame:
     return out[SECTOR_FEATURES] if set(SECTOR_FEATURES) <= set(out.columns) else out[[c for c in SECTOR_FEATURES if c in out.columns]]
 
 
-def merge_sector_features(features: pd.DataFrame, daily: pd.DataFrame) -> pd.DataFrame:
+def merge_sector_features(features: pd.DataFrame, daily: pd.DataFrame, stock_basic: pd.DataFrame | None = None) -> pd.DataFrame:
     """将板块特征计算后 merge 到特征表。"""
-    sector_df = build_sector_features(daily)
+    sector_df = build_sector_features(daily, stock_basic=stock_basic)
     if sector_df.empty:
         for col in SECTOR_FEATURES:
             features[col] = np.nan

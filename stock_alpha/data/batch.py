@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Iterable
 
 import pandas as pd
 
 from stock_alpha.data.downloader import MarketDataDownloader
 from stock_alpha.storage.status import TaskStatusStore
+
+
+def _ts() -> str:
+    """返回当前时间戳，用于日志打印。"""
+    return datetime.now().strftime('%H:%M:%S')
 
 
 def chunks(items: list[str], size: int) -> Iterable[list[str]]:
@@ -24,7 +30,7 @@ class BatchDownloadRunner:
         parts = []
         batches = list(chunks(codes, self.batch_size))
         for idx, batch in enumerate(batches, 1):
-            print(f"batch {idx}/{len(batches)} size={len(batch)}")
+            print(f"[{_ts()}] batch {idx}/{len(batches)} size={len(batch)}")
             df = self.downloader.download_daily(batch, start, end, adjust=adjust, force=force)
             if not df.empty:
                 parts.append(df)
@@ -33,11 +39,11 @@ class BatchDownloadRunner:
     def retry_failed_daily(self, start: str | None = None, end: str | None = None, force: bool = True) -> pd.DataFrame:
         status = TaskStatusStore(self.downloader.lake).failed()
         if status.empty:
-            print("no failed tasks")
+            print(f"[{_ts()}] no failed tasks")
             return pd.DataFrame()
         daily_failed = status[status["task"].astype(str) == "daily"]
         if daily_failed.empty:
-            print("no failed daily tasks")
+            print(f"[{_ts()}] no failed daily tasks")
             return pd.DataFrame()
         codes = daily_failed["code"].astype(str).str.zfill(6).drop_duplicates().tolist()
         s = start or str(daily_failed["start"].iloc[0])

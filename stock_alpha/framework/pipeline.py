@@ -12,8 +12,8 @@ from stock_alpha.models.v4_level2_model import Level2HeuristicScorer
 
 
 class V1Pipeline:
-    def fit_predict(self, daily: pd.DataFrame) -> pd.DataFrame:
-        features = build_daily_features(daily)
+    def fit_predict(self, daily: pd.DataFrame, stock_basic: pd.DataFrame | None = None) -> pd.DataFrame:
+        features = build_daily_features(daily, stock_basic=stock_basic)
         labels = make_triple_barrier_labels(daily)
         model = V1DailyAlphaModel().fit(features, labels)
         pred = model.predict(features)

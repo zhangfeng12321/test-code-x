@@ -14,7 +14,7 @@
 #   ./scripts/run_daily.sh --skip-download   # 跳过下载，只跑模型
 # ============================================================
 
-set -e
+set -eo pipefail
 
 # === 配置 ===
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -41,22 +41,23 @@ log() {
 }
 
 step() {
+    local ts=$(date '+%H:%M:%S')
     echo "" | tee -a "${LOG_FILE}"
     echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}" | tee -a "${LOG_FILE}"
-    echo -e "${GREEN}▶ $1${NC}" | tee -a "${LOG_FILE}"
+    echo -e "${GREEN}[${ts}] ▶ $1${NC}" | tee -a "${LOG_FILE}"
     echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}" | tee -a "${LOG_FILE}"
 }
 
 warn() {
-    echo -e "${YELLOW}⚠ $1${NC}" | tee -a "${LOG_FILE}"
+    echo -e "${YELLOW}[$(date '+%H:%M:%S')] ⚠ $1${NC}" | tee -a "${LOG_FILE}"
 }
 
 error() {
-    echo -e "${RED}✗ $1${NC}" | tee -a "${LOG_FILE}"
+    echo -e "${RED}[$(date '+%H:%M:%S')] ✗ $1${NC}" | tee -a "${LOG_FILE}"
 }
 
 success() {
-    echo -e "${GREEN}✓ $1${NC}" | tee -a "${LOG_FILE}"
+    echo -e "${GREEN}[$(date '+%H:%M:%S')] ✓ $1${NC}" | tee -a "${LOG_FILE}"
 }
 
 cd "${PROJECT_DIR}"
@@ -80,6 +81,52 @@ fi
 SKIP_DOWNLOAD=false
 if [[ "$1" == "--skip-download" ]]; then
     SKIP_DOWNLOAD=true
+fi
+
+# 交易日+收盘时间前置检查：周末/节假日/未收盘时跳过下载
+if [ "$SKIP_DOWNLOAD" = false ]; then
+    SHOULD_DOWNLOAD=$(${VENV} -c "
+import datetime
+from pathlib import Path
+
+now = datetime.datetime.now()
+today = now.date()
+wd = now.weekday()  # 0=Mon, 6=Sun
+
+# 周末不下载
+if wd >= 5:
+    print('SKIP_WEEKEND')
+# 工作日但未到收盘时间(15:15)，日线数据还没出来
+elif now.hour < 15 or (now.hour == 15 and now.minute < 15):
+    print('SKIP_NOT_CLOSED')
+else:
+    # 用本地交易日历判断是否节假日
+    cal_path = Path('${DATA_ROOT}/meta/trade_calendar.csv')
+    if cal_path.exists():
+        import pandas as pd
+        cal = pd.read_csv(cal_path)
+        if 'date' in cal.columns and not cal.empty:
+            trade_dates = set(pd.to_datetime(cal['date'], errors='coerce').dt.date)
+            if today not in trade_dates:
+                print('SKIP_HOLIDAY')
+            else:
+                print('OK')
+        else:
+            print('OK')  # 日历文件异常，不阻塞
+    else:
+        print('OK')  # 无日历文件，正常下载
+" 2>/dev/null)
+
+    if [[ "$SHOULD_DOWNLOAD" == "SKIP_WEEKEND" ]]; then
+        SKIP_DOWNLOAD=true
+        warn "今天是周末，跳过日线下载"
+    elif [[ "$SHOULD_DOWNLOAD" == "SKIP_NOT_CLOSED" ]]; then
+        SKIP_DOWNLOAD=true
+        warn "尚未收盘（15:15后日线数据才可用），跳过日线下载"
+    elif [[ "$SHOULD_DOWNLOAD" == "SKIP_HOLIDAY" ]]; then
+        SKIP_DOWNLOAD=true
+        warn "今天不是交易日（节假日），跳过日线下载"
+    fi
 fi
 
 if [ "$SKIP_DOWNLOAD" = false ]; then
@@ -106,20 +153,34 @@ if [ "$SKIP_DOWNLOAD" = false ]; then
     else
         warn "部分数据下载失败（不阻塞后续流程）"
     fi
+
+    # --- 下载北向资金 + 龙虎榜数据 ---
+    step "Step 1.5/5: 下载北向资金 & 龙虎榜数据"
+    log "拉取北向资金和龙虎榜数据..."
+
+    ${VENV} -u -m stock_alpha.scripts.run_production download-extra \
+        --provider fallback \
+        --start "${START_DATE}" \
+        --end "${END_DATE}" \
+        --data-root "${DATA_ROOT}" 2>&1 | tee -a "${LOG_FILE}"
+
+    if [ $? -eq 0 ]; then
+        success "北向资金 & 龙虎榜数据下载完成"
+    else
+        warn "北向/龙虎榜数据下载失败（不阻塞后续流程）"
+    fi
 else
     step "Step 1/5: 跳过数据下载 (--skip-download)"
     log "使用本地已有数据"
 fi
 
 # === Step 2-4: 跑完整 Pipeline（模型打分 + 交易计划 + 报告） ===
-step "Step 2/5: 模型训练与打分 (Ranker)"
-step "Step 3/5: 生成明日交易计划"
-step "Step 4/5: 输出报告"
+step "Step 2/5: 模型训练与打分 + 交易计划 + 报告"
 
 log "启动完整 Pipeline..."
 log "（训练 → 预测 → 回测 → 交易计划 → 报告，约需5-15分钟）"
 
-PIPELINE_OUTPUT=$(${VENV} -u -c "
+${VENV} -u -c "
 import json
 from stock_alpha.config.settings import PipelineConfig
 from stock_alpha.runtime.pipeline import FullPipeline
@@ -131,7 +192,7 @@ cfg.model_type = 'ranker'
 
 result = FullPipeline(cfg).run()
 print(json.dumps({'run_id': result['run_id'], 'markdown': str(result.get('markdown','')), 'html': str(result.get('html',''))}))
-" 2>&1 | tee -a "${LOG_FILE}")
+" 2>&1 | tee -a "${LOG_FILE}"
 
 if [ $? -ne 0 ]; then
     error "Pipeline 运行失败！查看日志: ${LOG_FILE}"
@@ -184,12 +245,13 @@ else:
 print()
 
 # 报告路径
-import glob
+import glob, os
 reports = sorted(glob.glob('reports/daily_report_*.html'))
 if reports:
+    abs_report = os.path.abspath(reports[-1])
     print(f'  📄 报告路径:')
-    print(f'     {reports[-1]}')
-    print(f'     打开: open {reports[-1]}')
+    print(f'     {abs_report}')
+    print(f'     打开: open {abs_report}')
 " 2>&1 | tee -a "${LOG_FILE}"
 
 # === 完成 ===

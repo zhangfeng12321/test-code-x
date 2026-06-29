@@ -1,3 +1,3 @@
-train_start,train_end,test_start,test_end,rows,backend
-2024-01-02,2024-04-02,2024-04-03,2024-05-07,40,lightgbm
-2024-01-30,2024-05-07,2024-05-08,2024-06-04,40,lightgbm
+train_start,train_end,test_start,test_end,purge_days,train_rows,test_rows,pred_rows,backend,model_type,top_n_avg_ret,top_n_win_rate,all_avg_ret,excess_ret
+2024-01-02,2024-04-02,2024-04-12,2024-05-14,5,120,40,40,"ensemble(ranker=lightgbm_ranker,classifier=lightgbm)",ensemble,0.014522157994354901,0.675,0.014522157994354901,0.0
+2024-01-30,2024-05-07,2024-05-15,2024-06-12,5,120,40,40,"ensemble(ranker=lightgbm_ranker,classifier=lightgbm)",ensemble,0.0002792650095716302,0.3,0.0002792650095716302,0.0

@@ -1,0 +1,13 @@
+{
+  "run_id": "20260627_010228_5b9c78da",
+  "markdown": "reports/daily_report_20240628.md",
+  "html": "reports/daily_report_20240628.html",
+  "archived_markdown": "data_pipeline_smoke/runs/20260627_010228_5b9c78da/reports/daily_report_20240628.md",
+  "archived_html": "data_pipeline_smoke/runs/20260627_010228_5b9c78da/reports/daily_report_20240628.html",
+  "archived_orders": "data_pipeline_smoke/runs/20260627_010228_5b9c78da/orders/next_day_orders.csv",
+  "archived_watchlist": "data_pipeline_smoke/runs/20260627_010228_5b9c78da/orders/watchlist.csv",
+  "archived_risk": "data_pipeline_smoke/runs/20260627_010228_5b9c78da/analysis/candidate_risk_tags.csv",
+  "archived_explain": "data_pipeline_smoke/runs/20260627_010228_5b9c78da/analysis/candidate_explanations.csv",
+  "model": "data_pipeline_smoke/runs/20260627_010228_5b9c78da/models/v1_daily_lgb.pkl",
+  "recommended_config": null
+}

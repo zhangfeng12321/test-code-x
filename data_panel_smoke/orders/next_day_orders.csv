@@ -1,0 +1,2 @@
+signal_date,code,name,action,ref_price,shares,planned_amount,weight,score,up_probability,down_probability,take_profit_price,stop_loss_price,price_source,sizing_method,note
+2024-06-28,600000,浦发银行,买入,7.70501653,12900,99394.713237,0.2,1.0,1.0,0.0,8.0902673565,7.473866034099999,cached,risk_parity,组合优化(risk_parity)；次日低开/放量下杀/跌破止损须取消或止损

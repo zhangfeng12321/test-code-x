@@ -1,0 +1,2 @@
+signal_date,code,action,ref_price,shares,planned_amount,score,up_probability,down_probability,take_profit_price,stop_loss_price,price_source,note
+2024-06-28,600000,BUY,7.70501653,12900,99394.713237,0.7362317277467229,0.7362317277467229,0.1159703936226985,,,cached,仅通过硬风控初筛；次日低开/放量下杀/跌破止损须取消或止损

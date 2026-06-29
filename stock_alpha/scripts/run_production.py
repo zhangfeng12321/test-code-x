@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -16,6 +17,11 @@ from stock_alpha.training.train_v1 import V1Trainer
 from stock_alpha.analysis_signal import signal_stability, turnover_by_date
 
 
+def _ts() -> str:
+    """返回当前时间戳，用于日志打印。"""
+    return datetime.now().strftime('%H:%M:%S')
+
+
 def provider(name: str):
     if name == "akshare":
         return AkShareProvider()
@@ -28,7 +34,7 @@ def provider(name: str):
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("command", choices=["init-config", "pipeline", "runs-index", "grid-search", "download-daily", "download-minute", "batch-download", "retry-failed", "quality-check", "train-v1", "backtest", "daily-report", "walk-forward", "real-smoke", "all-demo"])
+    p.add_argument("command", choices=["init-config", "pipeline", "runs-index", "grid-search", "download-daily", "download-minute", "download-extra", "batch-download", "retry-failed", "quality-check", "train-v1", "backtest", "daily-report", "walk-forward", "real-smoke", "all-demo"])
     p.add_argument("--provider", default="akshare", choices=["akshare", "baostock", "fallback"])
     p.add_argument("--start", default="20240101")
     p.add_argument("--end", default="20241231")
@@ -95,10 +101,40 @@ def main() -> None:
             elif 'basic' in dir() and not basic.empty and 'name' in basic.columns:
                 st_codes = set(basic[basic['name'].astype(str).str.contains('ST', case=False, na=False)]['code'].astype(str).str.zfill(6))
                 codes = [c for c in codes if str(c).zfill(6) not in st_codes]
-            print(f"预过滤后下载数量: {len(codes)}（已排除北交所+ST）")
+            print(f"[{_ts()}] 预过滤后下载数量: {len(codes)}（已排除北交所+ST）")
             runner.download_daily_batches(codes, args.start, args.end, force=args.force)
         else:
             runner.retry_failed_daily(args.start, args.end, force=True)
+        if hasattr(pr, "close"):
+            pr.close()
+        return
+
+    if args.command == "download-extra":
+        # 下载北向资金 + 龙虎榜 + 财务 + 融资融券 + 个股北向持股
+        pr = provider(args.provider)
+        dl = MarketDataDownloader(pr, lake)
+        # 先获取股票列表（用于个股级数据下载）
+        try:
+            basic = dl.get_stock_universe(limit=args.limit)
+            codes = basic["code"].tolist() if not basic.empty else []
+        except Exception:
+            codes = args.codes or []
+        print(f"[{_ts()}] 下载北向资金数据: {args.start} ~ {args.end}")
+        nb = dl.download_northbound_flow(args.start, args.end, force=args.force)
+        print(f"[{_ts()}]   北向资金: {len(nb)} 行")
+        print(f"[{_ts()}] 下载龙虎榜数据: {args.start} ~ {args.end}")
+        lhb = dl.download_dragon_tiger(args.start, args.end, force=args.force)
+        print(f"[{_ts()}]   龙虎榜: {len(lhb)} 行")
+        if codes:
+            print(f"[{_ts()}] 下载个股北向持股数据: {len(codes)} 只股票")
+            nbs = dl.download_northbound_stock(codes, args.start, args.end, force=args.force)
+            print(f"[{_ts()}]   个股北向持股: {len(nbs)} 行")
+            print(f"[{_ts()}] 下载财务指标数据: {len(codes)} 只股票")
+            fund = dl.download_fundamentals(codes, force=args.force)
+            print(f"[{_ts()}]   财务指标: {len(fund)} 行")
+        print(f"[{_ts()}] 下载融资融券数据: {args.start} ~ {args.end}")
+        margin = dl.download_margin_data(args.start, args.end, force=args.force)
+        print(f"[{_ts()}]   融资融券: {len(margin)} 行")
         if hasattr(pr, "close"):
             pr.close()
         return
@@ -122,7 +158,7 @@ def main() -> None:
         if hasattr(pr, "close"):
             pr.close()
         result = V1Trainer(lake).train(codes=args.codes, train_end=args.train_end, valid_end=args.valid_end)
-        print(f"trained backend={result.backend} rows={result.rows} model={result.model_path}")
+        print(f"[{_ts()}] trained backend={result.backend} rows={result.rows} model={result.model_path}")
         daily = V1Trainer(lake).load_daily(args.codes)
         pred = lake.read_parquet("predictions", "v1_latest")
         bt = AShareBacktester(AShareBacktestConfig(top_n=args.top_n, hold_days=args.hold_days, min_score=args.min_score, take_profit=args.take_profit, stop_loss=args.stop_loss)).run(daily, pred)
@@ -162,8 +198,8 @@ def main() -> None:
             signal_stability=lake.read_parquet("analysis", "signal_stability"),
             turnover=lake.read_parquet("analysis", "turnover"),
         )
-        print(f"report={path}")
-        print(f"html={html}")
+        print(f"[{_ts()}] report={path}")
+        print(f"[{_ts()}] html={html}")
         return
 
     if args.command in ["download-daily", "download-minute", "all-demo"]:
@@ -188,7 +224,7 @@ def main() -> None:
     trainer = V1Trainer(lake)
     if args.command in ["train-v1", "all-demo"]:
         result = trainer.train(codes=args.codes, train_end=args.train_end, valid_end=args.valid_end)
-        print(f"trained backend={result.backend} rows={result.rows} model={result.model_path} predictions={result.predictions_path}")
+        print(f"[{_ts()}] trained backend={result.backend} rows={result.rows} model={result.model_path} predictions={result.predictions_path}")
         if args.command != "all-demo":
             return
 
@@ -200,14 +236,14 @@ def main() -> None:
         out = runner.run(daily, pred)
         rec = runner.write_recommended_config({"provider": args.provider, "data_root": args.data_root, "start": args.start, "end": args.end, "codes": args.codes or [], "limit": args.limit, "batch_size": args.batch_size}, Path(args.data_root) / "optimization" / "recommended_config.json")
         print(out.head(20).to_string(index=False))
-        print(f"recommended_config={rec}")
+        print(f"[{_ts()}] recommended_config={rec}")
         return
 
     if args.command == "walk-forward":
         from stock_alpha.training.walk_forward import WalkForwardRunner
         daily = trainer.load_daily(args.codes)
         res = WalkForwardRunner(lake, train_days=args.train_days, test_days=args.test_days, step_days=args.step_days).run(daily)
-        print(f"walk_forward windows={len(res['windows'])} predictions={len(res['predictions'])}")
+        print(f"[{_ts()}] walk_forward windows={len(res['windows'])} predictions={len(res['predictions'])}")
         return
 
     if args.command in ["backtest", "all-demo"]:
@@ -255,8 +291,8 @@ def main() -> None:
             signal_stability=lake.read_parquet("analysis", "signal_stability"),
             turnover=lake.read_parquet("analysis", "turnover"),
         )
-        print(f"report={path}")
-        print(f"html={html}")
+        print(f"[{_ts()}] report={path}")
+        print(f"[{_ts()}] html={html}")
 
 
 if __name__ == "__main__":
